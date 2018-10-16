@@ -1,0 +1,18 @@
+name: svd2racr
+version: "0.1"
+about: Converts from cmsis-SVD to racr (Rust Access Code for Registers)
+args:
+    - input:
+        required: true
+        short: i
+        long: input
+        value_name: FILE
+        help: The input file (.svd)
+        takes_value: true
+    - output:
+        required: true
+        short: o
+        long: output
+        value_name: FILE
+        help: The output file (.racr)
+        takes_value: true

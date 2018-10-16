@@ -1,0 +1,10 @@
+# Geberated by Cargo
+/target
+**/*.rs.bk
+
+# Idea (Intelij) project file
+.idea
+*.iml
+
+# Backup files for emacs
+**/*~
