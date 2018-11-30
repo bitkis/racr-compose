@@ -13,6 +13,6 @@ args:
         required: true
         short: o
         long: output
-        value_name: FILE
-        help: The output file (.racr)
+        value_name: DIR
+        help: The output directory
         takes_value: true
