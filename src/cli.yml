@@ -1,6 +1,6 @@
-name: svd2racr
+name: racr-compose
 version: "0.1"
-about: Converts from cmsis-SVD to racr (Rust Access Code for Registers)
+about: Compose racr (Rust Access Code for Registers) files from other formats.
 args:
     - input:
         required: true

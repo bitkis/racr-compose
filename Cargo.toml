@@ -1,5 +1,5 @@
 [package]
-name = "svd2racr"
+name = "racr-compose"
 version = "0.1.0"
 authors = ["Kjetil Kjeka <kjetilkjeka@gmail.com>"]
 edition = "2018"
