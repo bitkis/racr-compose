@@ -20,6 +20,79 @@ mod convert;
 
 use crate::convert::Convert;
 
+#[derive(Debug, PartialEq)]
+enum RacrNode {
+    Directory{name: String, sub_nodes: Vec<RacrNode>},
+    File{name: String, file_content: racr::FileContent},
+}
+
+impl RacrNode {
+    fn write(&self, target: &Path) {
+        match self {
+            RacrNode::File{name, file_content} => {
+                let mut output_path = target.join(name);
+                output_path.set_extension("racr");
+                let mut output_file = File::create(output_path).unwrap();
+                writeln!(&mut output_file, "{}", file_content).unwrap();
+            },
+            RacrNode::Directory{name, sub_nodes} => {
+                std::fs::create_dir_all(target).unwrap();
+                for node in sub_nodes {
+                    node.write(&target.join(name));
+                }
+            },
+        }
+    }
+}
+
+#[derive(Debug)]
+struct ProgramState {
+    racr_nodes: Vec<RacrNode>,
+}
+
+impl ProgramState {
+    fn init() -> Self {
+        ProgramState {
+            racr_nodes: Vec::new(),
+        }
+    }
+
+    fn read_svd(&mut self, svd_file: &Path) {
+        // TODO: take in a racr path that selects where the definition will be placed in the racr hiarchy
+
+        let mut input_file = File::open(svd_file).unwrap();
+        let mut svd_string = String::new();
+        input_file.read_to_string(&mut svd_string).unwrap();
+        let svd = svd::parse(&svd_string);
+
+        let mut content: Vec<racr::Item> = Vec::new();
+
+        // Create the device
+        content.append(&mut svd.convert());
+
+        let mut peripheral_modules = svd.peripherals.iter().map(|peripheral| {
+            let mut content: Vec<racr::Item> = Vec::new();
+
+            content.append(&mut peripheral.convert());
+
+            racr::Item::Mod(racr::Module {
+                ident: peripheral.name.clone().to_snake_case().into(),
+                content: Some(content),
+            })
+        }).collect();
+        content.append(&mut peripheral_modules);
+        
+        self.racr_nodes.push(RacrNode::File{name: svd.name.into(), file_content: racr::FileContent{content}});
+    }
+
+    fn write_racr(&self, target: &Path) {
+        std::fs::create_dir_all(target).unwrap();
+        for node in self.racr_nodes.iter() {
+            node.write(target);
+        }
+    }
+}
+
 fn main() {
     let cli_yaml = load_yaml!("cli.yml");
     let cli_matches = App::from_yaml(cli_yaml).get_matches();
@@ -27,27 +100,9 @@ fn main() {
     let input_filepath = Path::new(cli_matches.value_of("input").unwrap());
     let output_dirpath = Path::new(cli_matches.value_of("output").unwrap());
 
-    DirBuilder::new().recursive(true).create(output_dirpath).unwrap();
+    let mut state = ProgramState::init();
 
-    let mut input_file = File::open(input_filepath).unwrap();
-    let mut svd_string = String::new();
-    input_file.read_to_string(&mut svd_string).unwrap();
-    let svd = svd::parse(&svd_string);
+    state.read_svd(input_filepath);
+    state.write_racr(output_dirpath);
 
-    // Write out the unit/device definition
-    let mut output_file_lib = File::create(output_dirpath.join("lib.racr")).unwrap();
-    let racr_unit = svd.convert();
-    writeln!(&mut output_file_lib, "{}", racr_unit).unwrap();
-
-    // Write out peripheral definitions
-    for peripheral in svd.peripherals {
-        if let Some(racr_peripheral) = peripheral.convert() {
-            let mut output_file = File::create(output_dirpath.join(String::from(peripheral.name.clone().to_snake_case()) + ".racr")).unwrap();
-            writeln!(&mut output_file, "{}", racr_peripheral).unwrap();
-        }
-    }
-
-
-
-    println!("Hello World!");
 }

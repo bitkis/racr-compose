@@ -7,5 +7,5 @@ edition = "2018"
 [dependencies]
 clap = {version = "2.32", features = ["yaml"]}
 svd-parser = "0.6.0"
-racr = {git = "https://github.com/kjetilkjeka/racr-format.git", rev="bfcf10580057949c32d4e9a78078de21e166144a"}
+racr = {git = "https://github.com/kjetilkjeka/racr-format.git", rev="3fb9f2314290e3670f3f3e79f13a6ef3e700e8c4"}
 inflections = "1.1"
