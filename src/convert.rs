@@ -1,4 +1,5 @@
 use inflections::Inflect;
+use svd_parser::svd;
 
 pub(crate) trait Convert<T> {
     fn convert(&self) -> T;
@@ -38,21 +39,42 @@ impl Convert<Vec<racr::Item>> for svd_parser::Peripheral {
                 } )
             )
         } else if let Some(ref svd_registers) = self.registers.clone() {
-            let racr_registers = svd_registers.iter().map(|x| {
-                let reg_info = match x.clone().left().unwrap() {
-                    svd_parser::Register::Single(info) => info,
-                    svd_parser::Register::Array(info, _) => info,
-                };
-
-
-                racr::RegisterSlot::Single {
-                    instance: racr::RegisterInstance{
-                        ident: reg_info.name.clone().to_snake_case().into(),
-                        ty: racr::RegisterType::Single{path: racr::Ident::from(reg_info.name.clone().to_pascal_case()).into()},
+            // Add peripheral definition
+            let racr_registers = svd_registers.iter().fold(Vec::new(), |mut racr_registers, reg| {
+                match reg.clone() {
+                    svd::RegisterCluster::Register(svd::Register::Single(info)) => {
+                        racr_registers.push(racr::RegisterSlot::Single {
+                            instance: racr::RegisterInstance{
+                                ident: info.name.clone().to_snake_case().into(),
+                                ty: racr::RegisterType::Single{path: racr::Ident::from(info.name.clone().to_pascal_case()).into()},
+                            },
+                            offset: info.address_offset as usize,
+                        });
                     },
-                    offset: reg_info.address_offset as usize,
+                    svd::RegisterCluster::Register(svd::Register::Array(info, array)) => {
+                        if Some(array.dim_increment*8) == info.size {
+                            racr_registers.push(racr::RegisterSlot::Single {
+                                instance: racr::RegisterInstance{
+                                    ident: info.name.clone().to_snake_case().into(),
+                                    ty: racr::RegisterType::Array{path: racr::Ident::from(info.name.clone().to_pascal_case()).into(), size: array.dim as usize},
+                                },
+                                offset: info.address_offset as usize,
+                            });
+                        } else {
+                            // TODO: unroll array into many registers
+                            racr_registers.push(racr::RegisterSlot::Single {
+                                instance: racr::RegisterInstance{
+                                    ident: info.name.clone().to_snake_case().into(),
+                                    ty: racr::RegisterType::Single{path: racr::Ident::from(info.name.clone().to_pascal_case()).into()},
+                                },
+                                offset: info.address_offset as usize,
+                            });
+                        }
+                    },
+                    svd::RegisterCluster::Cluster(_) => unimplemented!(),
                 }
-            }).collect();
+                racr_registers
+            });
 
             content.push(
                 racr::PeripheralDefinition {
@@ -62,10 +84,12 @@ impl Convert<Vec<racr::Item>> for svd_parser::Peripheral {
                 }.into()
             );
 
+            // Add register definitions
             content.append(&mut svd_registers.iter().map(|x| {
-                let reg_info = match x.clone().left().unwrap() {
-                    svd_parser::Register::Single(info) => info,
-                    svd_parser::Register::Array(info, _) => info,
+                let reg_info = match x.clone() {
+                    svd::RegisterCluster::Register(svd::Register::Single(info)) => info,
+                    svd::RegisterCluster::Register(svd::Register::Array(info, _)) => info,
+                    svd::RegisterCluster::Cluster(_) => unimplemented!(),
                 };
 
                 let fields = if let Some(fields) = reg_info.fields {
@@ -75,7 +99,7 @@ impl Convert<Vec<racr::Item>> for svd_parser::Peripheral {
                             description: x.description.clone(),
                             bit_start: x.bit_range.offset as usize,
                             bit_end: (x.bit_range.offset + x.bit_range.width) as usize,
-                            access: Some(x.access.unwrap().convert()),
+                            access: x.access.map(|access| access.convert()),
                         }
                     }).collect()
                 } else {
@@ -83,7 +107,7 @@ impl Convert<Vec<racr::Item>> for svd_parser::Peripheral {
                 };
 
                 racr::RegisterDefinition{
-                    access: reg_info.access.unwrap().convert(),
+                    access: reg_info.access.map(|access| access.convert()).unwrap_or(racr::Access::ReadWrite),
                     ident: reg_info.name.clone().to_pascal_case().into(),
                     description: Some(reg_info.description.clone()),
                     size: reg_info.size.unwrap() as usize,

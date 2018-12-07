@@ -63,7 +63,7 @@ impl ProgramState {
         let mut input_file = File::open(svd_file).unwrap();
         let mut svd_string = String::new();
         input_file.read_to_string(&mut svd_string).unwrap();
-        let svd = svd::parse(&svd_string);
+        let svd = svd::parse(&svd_string).unwrap();
 
         let mut content: Vec<racr::Item> = Vec::new();
 
