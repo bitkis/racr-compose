@@ -11,7 +11,6 @@ use svd_parser as svd;
 use std::io::{Read, Write};
 use std::fs::{
     File,
-    DirBuilder,
 };
 
 use std::path::Path;
@@ -36,7 +35,7 @@ impl RacrNode {
                 write!(&mut output_file, "{}", file_content).unwrap();
             },
             RacrNode::Directory{name, sub_nodes} => {
-                std::fs::create_dir_all(target).unwrap();
+                std::fs::create_dir_all(&target.join(name)).unwrap();
                 for node in sub_nodes {
                     node.write(&target.join(name));
                 }
@@ -82,7 +81,12 @@ impl ProgramState {
         }).collect();
         content.append(&mut peripheral_modules);
         
-        self.racr_nodes.push(RacrNode::File{name: svd.name.into(), file_content: racr::FileContent{content}});
+        self.racr_nodes.push(
+            RacrNode::Directory{
+                name: svd.name.into(),
+                sub_nodes: vec![ RacrNode::File{name: String::from("lib"), file_content: racr::FileContent{content} } ]
+            }
+        );
     }
 
     fn write_racr(&self, target: &Path) {
