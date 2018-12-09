@@ -8,5 +8,5 @@ edition = "2018"
 clap = {version = "2.32", features = ["yaml"]}
 #svd-parser = "0.6.0"
 svd-parser = {git = "https://github.com/japaric/svd.git"}
-racr = {git = "https://github.com/kjetilkjeka/racr-format.git", rev="07755f60462d646208b6090a40c070af7b4884ac"}
+racr = {git = "https://github.com/kjetilkjeka/racr-format.git", rev="1f8df4bb8685e874bdfbd661c18badd20804b3e7"}
 inflections = "1.1"

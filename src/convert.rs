@@ -98,12 +98,26 @@ impl Convert<racr::Item> for svd::Register {
 
         let fields = if let Some(fields) = reg_info.fields {
             fields.iter().map(|x| {
+                let mut variants = Vec::new();
+
+                for enumerated_values in x.enumerated_values.iter() {
+                    for enumerated_value in enumerated_values.values.iter() {
+                        variants.push(
+                            racr::FieldVariant{
+                                ident: enumerated_value.name.clone().to_pascal_case().into(),
+                                documentation: enumerated_value.description.clone(),
+                                value: enumerated_value.value.unwrap() as u128,
+                            }
+                        );
+                    }
+                }
+
                 racr::FieldInstance {
                     ident: x.name.clone().to_snake_case().into(),
                     documentation: x.description.clone(),
                     bit_range: (x.bit_range.offset as usize)..((x.bit_range.offset + x.bit_range.width) as usize),
                     access: x.access.map(|access| access.convert()),
-                    variants: Vec::new(),
+                    variants,
                 }
             }).collect()
         } else {
