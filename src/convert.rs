@@ -97,8 +97,7 @@ impl Convert<Vec<racr::Item>> for svd_parser::Peripheral {
                         racr::FieldInstance {
                             ident: x.name.clone().to_snake_case().into(),
                             documentation: x.description.clone(),
-                            bit_start: x.bit_range.offset as usize,
-                            bit_end: (x.bit_range.offset + x.bit_range.width) as usize,
+                            bit_range: (x.bit_range.offset as usize)..((x.bit_range.offset + x.bit_range.width) as usize),
                             access: x.access.map(|access| access.convert()),
                             variants: Vec::new(),
                         }
