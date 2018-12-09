@@ -33,7 +33,7 @@ impl RacrNode {
                 let mut output_path = target.join(name);
                 output_path.set_extension("racr");
                 let mut output_file = File::create(output_path).unwrap();
-                writeln!(&mut output_file, "{}", file_content).unwrap();
+                write!(&mut output_file, "{}", file_content).unwrap();
             },
             RacrNode::Directory{name, sub_nodes} => {
                 std::fs::create_dir_all(target).unwrap();
