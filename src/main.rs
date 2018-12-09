@@ -67,12 +67,27 @@ impl ProgramState {
         let mut content: Vec<racr::Item> = Vec::new();
 
         // Create the device
-        content.append(&mut svd.convert());
+        content.push(svd.convert());
 
+
+        // Create a module for each peripheral
         let mut peripheral_modules = svd.peripherals.iter().map(|peripheral| {
             let mut content: Vec<racr::Item> = Vec::new();
 
-            content.append(&mut peripheral.convert());
+            content.push(peripheral.convert());
+
+            if let Some(ref registers) = peripheral.registers {
+                for register in registers {
+                    match register {
+                        svd::RegisterCluster::Register(register) => {
+                            content.push(register.convert());
+                        },
+                        svd::RegisterCluster::Cluster(_cluster) => {
+                            // TODO: Unroll cluster
+                        },
+                    }
+                }
+            }
 
             racr::Item::Mod(racr::Module {
                 ident: peripheral.name.clone().to_snake_case().into(),
