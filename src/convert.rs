@@ -10,7 +10,7 @@ impl Convert<racr::Item> for svd::Device {
         let peripherals = self.peripherals.iter().map(|x| 
             racr::PeripheralInstance{
                 ident: x.name.clone().to_snake_case().into(),
-                path: racr::Ident::from(x.name.clone().to_pascal_case()).into(),
+                path: racr::Path{segments: vec![x.name.clone().to_snake_case().into(), x.name.clone().to_pascal_case().into()]},
                 address: x.base_address as usize,
 
             }).collect();
