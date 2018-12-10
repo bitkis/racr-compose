@@ -27,7 +27,16 @@ impl Convert<racr::Item> for svd::Peripheral {
     fn convert(&self) -> racr::Item {
         if let Some(ref derived_from) = self.derived_from {
             racr::Item::Use( racr::Use {
-                tree: racr::UseTree::Ident(derived_from.clone().into()),
+                tree: racr::UseTree::Path{
+                    path_segment: "super".into(),
+                    sub_tree: Box::new( racr::UseTree::Path{
+                        path_segment: derived_from.clone().to_snake_case().into(),
+                        sub_tree: Box::new( racr::UseTree::Rename{
+                            ident: derived_from.clone().to_pascal_case().into(),
+                            rename: self.name.clone().to_pascal_case().into(),
+                        })
+                    })
+                }
             })
         } else if let Some(ref svd_registers) = self.registers.clone() {
             // Add peripheral definition
