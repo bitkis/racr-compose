@@ -121,12 +121,20 @@ impl Convert<racr::Item> for svd::Register {
                     }
                 }
 
-                racr::FieldInstance {
-                    ident: x.name.clone().to_snake_case().into(),
-                    documentation: x.description.clone(),
-                    bit_range: (x.bit_range.offset as usize)..((x.bit_range.offset + x.bit_range.width) as usize),
-                    access: x.access.map(|access| access.convert()),
-                    variants,
+                if variants.is_empty() {
+                    racr::FieldInstance {
+                        ty: racr::FieldType::Field{ident: x.name.clone().to_snake_case().into()},
+                        documentation: x.description.clone(),
+                        bit_range: (x.bit_range.offset as usize)..((x.bit_range.offset + x.bit_range.width) as usize),
+                        access: x.access.map(|access| access.convert()),
+                    }
+                } else {
+                    racr::FieldInstance {
+                        ty: racr::FieldType::Enum{ident: x.name.clone().to_snake_case().into(), variants},
+                        documentation: x.description.clone(),
+                        bit_range: (x.bit_range.offset as usize)..((x.bit_range.offset + x.bit_range.width) as usize),
+                        access: x.access.map(|access| access.convert()),
+                    }
                 }
             }).collect()
         } else {
@@ -140,7 +148,7 @@ impl Convert<racr::Item> for svd::Register {
                 .replace("%s", "")
                 .to_pascal_case()
                 .into(),
-            documentation: Some(reg_info.description.clone()),
+            documentation: reg_info.description.clone(),
             size: reg_info.size.unwrap() as usize,
             reset_value: reg_info.reset_value.map(|x| x as u128),
             fields,

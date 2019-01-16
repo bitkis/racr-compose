@@ -16,3 +16,13 @@ args:
         value_name: DIR
         help: The output directory
         takes_value: true
+    - interactive :
+        required : false
+        long : interactive
+        help : Always open interactive mode before quiting , even when manual arbitration is not required ( cannot be used together with ‘-- batch ‘)
+    - batch :
+        required : false
+        long : batch
+        help : Never open interactive mode , if manual arbitration is required the program will return an error code and quit ( cannot be used together with ‘-- interactive ‘)
+        takes_value : false
+        conflicts_with : interactive
